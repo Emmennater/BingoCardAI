@@ -24,7 +24,7 @@ def apply_proj(corners, f, tilt_x, tilt_y, offset_x, offset_y, dst_width, dst_he
   projected = projected.astype(np.float32)
   return projected
 
-def random_transform(img, bg=None, bg_scale=1.0):
+def random_transform(img):
   """Applies a random perspective transform to the image and background.
   
   The background will be warped with the same transform and tiled so that
@@ -34,9 +34,7 @@ def random_transform(img, bg=None, bg_scale=1.0):
   # Ensure both images are 3-channel before any color operations
   if len(img.shape) == 2:  # grayscale → BGR
       img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-  if len(bg.shape) == 2:
-      bg = cv2.cvtColor(bg, cv2.COLOR_GRAY2BGR)
-
+  
   # Grayscale
   img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
   img = cv2.GaussianBlur(img, (5, 5), 0)

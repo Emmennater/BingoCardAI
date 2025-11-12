@@ -67,16 +67,15 @@ class CornerNet(nn.Module):
 # Dataset Definition
 # -------------------------
 class BingoCornerDataset(Dataset):
-  def __init__(self, img, bg, n_samples=5000):
+  def __init__(self, img, n_samples=5000):
     self.img = img
-    self.bg = bg
     self.n_samples = n_samples
 
   def __len__(self):
     return self.n_samples
 
   def __getitem__(self, idx):
-    warped, true_corners = random_transform(self.img, self.bg, 2.0)
+    warped, true_corners = random_transform(self.img)
 
     # ensure shape (H, W, 1)
     if warped.ndim == 2:
@@ -94,10 +93,9 @@ def train():
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
   img = cv2.imread("input.png", cv2.IMREAD_GRAYSCALE)
-  bg = cv2.imread("background.png", cv2.IMREAD_GRAYSCALE)
   img = cv2.resize(img, (400, 400))
 
-  dataset = BingoCornerDataset(img, bg, n_samples=5000)
+  dataset = BingoCornerDataset(img, n_samples=5000)
   dataloader = DataLoader(dataset, batch_size=8, shuffle=True, num_workers=0)
 
   model = CornerNet.load("model.pt").to(device)
