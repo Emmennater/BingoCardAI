@@ -15,7 +15,6 @@ class CornerNet(nn.Module):
     super().__init__()
     self.encoder = nn.Sequential(
       nn.Conv2d(1, 32, 3, stride=2, padding=1),
-      nn.BatchNorm2d(32),
       nn.ReLU(),
 
       nn.Conv2d(32, 64, 3, stride=2, padding=1),
@@ -48,7 +47,7 @@ class CornerNet(nn.Module):
 
   @staticmethod
   def save(model, path):
-    print("Saving model to", path)
+    # print("Saving model to", path)
     torch.save(model.state_dict(), path + ".tmp")
     os.replace(path + ".tmp", path)
 
@@ -95,14 +94,14 @@ def train():
   img = cv2.imread("input.png", cv2.IMREAD_GRAYSCALE)
   img = cv2.resize(img, (400, 400))
 
-  dataset = BingoCornerDataset(img, n_samples=5000)
-  dataloader = DataLoader(dataset, batch_size=8, shuffle=True, num_workers=0)
+  dataset = BingoCornerDataset(img, n_samples=50000)
+  dataloader = DataLoader(dataset, batch_size=16, shuffle=True, num_workers=0)
 
   model = CornerNet.load("model.pt").to(device)
-  optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+  optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
   loss_fn = nn.MSELoss()
 
-  log_interval = 10
+  log_interval = 30
   running_loss = 0.0
 
   with tqdm(dataloader, desc="Training", unit="batch") as prog_bar:
@@ -114,6 +113,7 @@ def train():
       preds = model(warped_batch)
       loss = loss_fn(preds, corner_batch)
       loss.backward()
+      torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
       optimizer.step()
 
       running_loss += loss.item()
@@ -129,31 +129,32 @@ def test():
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
   model = CornerNet.load("model.pt").to(device)
   img = cv2.imread("input.png", cv2.IMREAD_GRAYSCALE)
-  bg = cv2.imread("background.png", cv2.IMREAD_GRAYSCALE)
   img = cv2.resize(img, (400, 400))
 
-  warped, corners = random_transform(img, bg, 2.0)
-  warped = torch.from_numpy(warped).permute(2, 0, 1).float() / 255.0
-  corners = torch.from_numpy(corners).float() / 400.0
-  corners = corners.to(device)
+  for i in range(20):
+    warped, corners = random_transform(img)
+    warped_np = torch.from_numpy(warped).permute(2, 0, 1).float() / 255.0
+    corners = torch.from_numpy(corners).float() / 400.0
+    corners = corners.to(device)
 
-  with torch.no_grad():
-    preds = model(warped.to(device))
+    with torch.no_grad():
+      preds = model(warped_np[None, ...].to(device))[0]
 
-  pred_corners = []
-  for i in range(preds.shape[0]):
-    value = preds[i].cpu().numpy()
-    value = value * 400
-    pred_corners.append(value)
+    pred_corners = []
+    for i in range(preds.shape[0]):
+      value = preds[i].cpu().numpy()
+      value = value * 400
+      pred_corners.append(int(value))
 
-  cv2.line(warped, (pred_corners[0], pred_corners[1]), (pred_corners[2], pred_corners[3]), (0, 255, 0), 2)
-  cv2.line(warped, (pred_corners[2], pred_corners[3]), (pred_corners[4], pred_corners[5]), (0, 255, 0), 2)
-  cv2.line(warped, (pred_corners[4], pred_corners[5]), (pred_corners[6], pred_corners[7]), (0, 255, 0), 2)
-  cv2.line(warped, (pred_corners[6], pred_corners[7]), (pred_corners[0], pred_corners[1]), (0, 255, 0), 2)
+    cv2.line(warped, (pred_corners[0], pred_corners[1]), (pred_corners[2], pred_corners[3]), (255, 255, 255), 2)
+    cv2.line(warped, (pred_corners[2], pred_corners[3]), (pred_corners[4], pred_corners[5]), (255, 255, 255), 2)
+    cv2.line(warped, (pred_corners[4], pred_corners[5]), (pred_corners[6], pred_corners[7]), (255, 255, 255), 2)
+    cv2.line(warped, (pred_corners[6], pred_corners[7]), (pred_corners[0], pred_corners[1]), (255, 255, 255), 2)
 
-  cv2.imshow("warped", warped)
-  cv2.waitKey(0)
-  cv2.destroyAllWindows()
+    cv2.imshow("warped", warped)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 if __name__ == "__main__":
   train()
+  # test()

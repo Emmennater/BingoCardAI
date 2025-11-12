@@ -82,7 +82,7 @@ def random_transform(img):
   M = cv2.getPerspectiveTransform(src, dst)
 
   # Randomly darken image
-  darkness = np.random.uniform(0.5, 1.5)
+  darkness = np.random.uniform(0.5, 1.2)
   darkness_rgb = np.clip(np.array([209, 209, 209]) * darkness, 0, 255)
   img = np.clip(img * darkness, 0, 255)
 
@@ -116,14 +116,14 @@ def random_transform(img):
   #   bg_warped = np.zeros_like(warped)
 
   out = warped
-  out = out * (1 - np.random.random((dst_height, dst_width, 1)) * 0.5)
+  out = out * (1 - np.random.random((dst_height, dst_width, 1)) * 0.2)
   out = out.astype(np.float32)
 
   # Debug display grid points
-  cv2.line(out, (int(gdst[0][0]), int(gdst[0][1])), (int(gdst[1][0]), int(gdst[1][1])), (0, 0, 255), 2)
-  cv2.line(out, (int(gdst[1][0]), int(gdst[1][1])), (int(gdst[2][0]), int(gdst[2][1])), (0, 0, 255), 2)
-  cv2.line(out, (int(gdst[2][0]), int(gdst[2][1])), (int(gdst[3][0]), int(gdst[3][1])), (0, 0, 255), 2)
-  cv2.line(out, (int(gdst[3][0]), int(gdst[3][1])), (int(gdst[0][0]), int(gdst[0][1])), (0, 0, 255), 2)
+  # cv2.line(out, (int(gdst[0][0]), int(gdst[0][1])), (int(gdst[1][0]), int(gdst[1][1])), (0, 0, 255), 2)
+  # cv2.line(out, (int(gdst[1][0]), int(gdst[1][1])), (int(gdst[2][0]), int(gdst[2][1])), (0, 0, 255), 2)
+  # cv2.line(out, (int(gdst[2][0]), int(gdst[2][1])), (int(gdst[3][0]), int(gdst[3][1])), (0, 0, 255), 2)
+  # cv2.line(out, (int(gdst[3][0]), int(gdst[3][1])), (int(gdst[0][0]), int(gdst[0][1])), (0, 0, 255), 2)
 
   out = out[:, :, 1][:, :, np.newaxis]
   
