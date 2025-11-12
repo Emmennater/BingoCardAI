@@ -125,5 +125,35 @@ def train():
         running_loss = 0.0
         CornerNet.save(model, "model.pt")
 
+def test():
+  device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+  model = CornerNet.load("model.pt").to(device)
+  img = cv2.imread("input.png", cv2.IMREAD_GRAYSCALE)
+  bg = cv2.imread("background.png", cv2.IMREAD_GRAYSCALE)
+  img = cv2.resize(img, (400, 400))
+
+  warped, corners = random_transform(img, bg, 2.0)
+  warped = torch.from_numpy(warped).permute(2, 0, 1).float() / 255.0
+  corners = torch.from_numpy(corners).float() / 400.0
+  corners = corners.to(device)
+
+  with torch.no_grad():
+    preds = model(warped.to(device))
+
+  pred_corners = []
+  for i in range(preds.shape[0]):
+    value = preds[i].cpu().numpy()
+    value = value * 400
+    pred_corners.append(value)
+
+  cv2.line(warped, (pred_corners[0], pred_corners[1]), (pred_corners[2], pred_corners[3]), (0, 255, 0), 2)
+  cv2.line(warped, (pred_corners[2], pred_corners[3]), (pred_corners[4], pred_corners[5]), (0, 255, 0), 2)
+  cv2.line(warped, (pred_corners[4], pred_corners[5]), (pred_corners[6], pred_corners[7]), (0, 255, 0), 2)
+  cv2.line(warped, (pred_corners[6], pred_corners[7]), (pred_corners[0], pred_corners[1]), (0, 255, 0), 2)
+
+  cv2.imshow("warped", warped)
+  cv2.waitKey(0)
+  cv2.destroyAllWindows()
+
 if __name__ == "__main__":
   train()
